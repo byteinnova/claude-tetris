@@ -1,0 +1,53 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  triage:
+    # Skip if issue mentions @claude — handled by claude.yml
+    # Also skip if edited by github-actions bot to avoid re-trigger loops
+    if: |
+      !contains(github.event.issue.body, '@claude') &&
+      !contains(github.event.issue.title, '@claude') &&
+      github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Run Claude triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label list:*),Bash(gh label create:*)"'
+          prompt: |
+            Eres un agente de triage para el issue #${{ github.event.issue.number }} del repositorio ${{ github.repository }}.
+
+            Sigue estos pasos en orden:
+
+            1. Lee el issue completo:
+               gh issue view ${{ github.event.issue.number }}
+
+            2. Lista los labels disponibles:
+               gh label list
+
+            3. Asigna los labels más adecuados al issue:
+               gh issue edit ${{ github.event.issue.number }} --add-label "<label>"
+               - Reutiliza labels existentes cuando apliquen.
+               - Crea un label nuevo con `gh label create` SOLO si ninguno existente encaja.
+                 Usa prefijos descriptivos como: area/..., priority/..., type/...
+
+            4. Publica UN único comentario en español con el diagnóstico:
+               gh issue comment ${{ github.event.issue.number }} --body "..."
+
+               El comentario debe incluir:
+               - **Resumen del problema**: descripción breve del issue en tus propias palabras.
+               - **Tipo**: bug / mejora / duda / otro.
+               - **Severidad estimada**: crítica / alta / media / baja.
+               - **Pasos sugeridos a alto nivel**: qué habría que investigar o hacer para resolverlo.
+
+               NO leas el código del repositorio. NO cites archivos ni funciones.
+               NO edites el cuerpo ni el título del issue.
