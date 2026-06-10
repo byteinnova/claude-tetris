@@ -40,7 +40,36 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
+const themeSwitch = document.getElementById('theme-switch');
+
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+
+// ---- Tema (claro / oscuro) ----
+// El color de la rejilla se dibuja en el canvas, así que lo leemos del
+// tema CSS activo y lo cacheamos para no recalcularlo en cada frame.
+let gridColor = '#22222e';
+
+function readGridColor() {
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue('--grid').trim();
+  if (value) gridColor = value;
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeSwitch.checked = theme === 'light';
+  readGridColor();
+}
+
+// Por defecto modo oscuro; respeta la preferencia guardada si existe.
+const savedTheme = localStorage.getItem('tetris-theme') === 'light' ? 'light' : 'dark';
+applyTheme(savedTheme);
+
+themeSwitch.addEventListener('change', () => {
+  const theme = themeSwitch.checked ? 'light' : 'dark';
+  applyTheme(theme);
+  localStorage.setItem('tetris-theme', theme);
+});
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -169,7 +198,7 @@ function drawBlock(context, x, y, colorIndex, size, alpha) {
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#22222e';
+  ctx.strokeStyle = gridColor;
   ctx.lineWidth = 0.5;
   for (let c = 1; c < COLS; c++) {
     ctx.beginPath();
