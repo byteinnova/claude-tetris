@@ -33,6 +33,14 @@
           <span class="label">LEVEL</span>
           <span class="value" id="level">1</span>
         </div>
+        <div class="panel-section">
+          <span class="label">COMBO</span>
+          <span class="value" id="combo">0</span>
+        </div>
+        <div class="panel-section">
+          <span class="label">MAX LINES</span>
+          <span class="value" id="max-lines">0</span>
+        </div>
 
         <div class="panel-section">
           <span class="label">NEXT</span>
@@ -55,6 +63,33 @@
         <div class="overlay-box">
           <p id="overlay-title">GAME OVER</p>
           <p id="overlay-score"></p>
+
+          <div id="hs-name-section" class="hs-name-section hidden">
+            <p class="hs-name-label">Nuevo record — ingresa tu nombre:</p>
+            <div class="hs-name-row">
+              <input type="text" id="hs-name-input" maxlength="16" placeholder="Nombre" />
+              <button id="hs-save-btn">Guardar</button>
+            </div>
+          </div>
+
+          <div id="hs-section" class="hs-section hidden">
+            <div class="hs-header-row">
+              <span class="label">TOP 5</span>
+              <button id="clear-hs-btn" class="clear-hs-btn">Borrar records</button>
+            </div>
+            <table class="hs-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Puntaje</th>
+                  <th>Max/Combo</th>
+                </tr>
+              </thead>
+              <tbody id="hs-tbody"></tbody>
+            </table>
+          </div>
+
           <button id="restart-btn">Reiniciar</button>
         </div>
       </div>
