@@ -179,6 +179,26 @@ body {
   border-radius: 4px;
 }
 
+/* ---- Selector de skin ---- */
+.skin-select {
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  letter-spacing: 1px;
+  padding: 5px 8px;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+.skin-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 /* ---- Controles ---- */
 .controls ul {
   list-style: none;
