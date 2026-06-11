@@ -4,16 +4,7 @@ const COLS = 10;
 const ROWS = 20;
 const BLOCK = 30;
 
-const COLORS = [
-  null,
-  '#4dd0e1', // I - cyan
-  '#ffd54f', // O - yellow
-  '#ba68c8', // T - purple
-  '#81c784', // S - green
-  '#e57373', // Z - red
-  '#90caf9', // J - azul pálido
-  '#ffb74d', // L - orange
-];
+const LINE_SCORES = [0, 100, 300, 500, 800];
 
 const PIECES = [
   null,
@@ -26,7 +17,97 @@ const PIECES = [
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
 ];
 
-const LINE_SCORES = [0, 100, 300, 500, 800];
+// ---- Skins ----
+
+const SKINS = {
+  retro: {
+    name: 'Retro',
+    colors: [null, '#4dd0e1', '#ffd54f', '#ba68c8', '#81c784', '#e57373', '#90caf9', '#ffb74d'],
+    boardBg: null,
+    gridColor: null,
+    draw(ctx, x, y, colorIndex, size, alpha) {
+      ctx.globalAlpha = alpha ?? 1;
+      ctx.fillStyle = this.colors[colorIndex];
+      ctx.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+      ctx.globalAlpha = 1;
+    },
+  },
+  neon: {
+    name: 'Neon',
+    colors: [null, '#00ffff', '#ffff00', '#ff00ff', '#00ff88', '#ff3355', '#4488ff', '#ff8800'],
+    boardBg: '#000005',
+    gridColor: '#0d0d1a',
+    draw(ctx, x, y, colorIndex, size, alpha) {
+      const color = this.colors[colorIndex];
+      ctx.globalAlpha = alpha ?? 1;
+      const pad = 2;
+      const bx = x * size + pad, by = y * size + pad;
+      const bw = size - pad * 2, bh = size - pad * 2;
+      ctx.fillStyle = color + '22';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 14;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
+      ctx.globalAlpha = 1;
+    },
+  },
+  pastel: {
+    name: 'Pastel',
+    colors: [null, '#7ecfd4', '#f5c97a', '#c89fd4', '#8ed4a0', '#f09090', '#90bce8', '#f5b07a'],
+    boardBg: '#faf8f5',
+    gridColor: '#ede9e2',
+    draw(ctx, x, y, colorIndex, size, alpha) {
+      ctx.globalAlpha = alpha ?? 1;
+      const pad = 2, r = 6;
+      const bx = x * size + pad, by = y * size + pad;
+      const bw = size - pad * 2, bh = size - pad * 2;
+      ctx.fillStyle = this.colors[colorIndex];
+      ctx.beginPath();
+      ctx.moveTo(bx + r, by);
+      ctx.arcTo(bx + bw, by,     bx + bw, by + bh, r);
+      ctx.arcTo(bx + bw, by + bh, bx,     by + bh, r);
+      ctx.arcTo(bx,      by + bh, bx,      by,     r);
+      ctx.arcTo(bx,      by,      bx + bw, by,     r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.fillRect(bx + 3, by + 3, bw - 6, 4);
+      ctx.globalAlpha = 1;
+    },
+  },
+  pixel: {
+    name: 'Pixel',
+    colors: [null, '#00b4d8', '#f4a261', '#9b5de5', '#2dc653', '#e63946', '#4895ef', '#f77f00'],
+    boardBg: '#1e1e1e',
+    gridColor: '#111111',
+    draw(ctx, x, y, colorIndex, size, alpha) {
+      const color = this.colors[colorIndex];
+      ctx.globalAlpha = alpha ?? 1;
+      const bx = x * size, by = y * size;
+      ctx.fillStyle = color;
+      ctx.fillRect(bx, by, size, size);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(bx, by, size, 2);
+      ctx.fillRect(bx, by, 2, size);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillRect(bx + size - 2, by, 2, size);
+      ctx.fillRect(bx, by + size - 2, size, 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.12)';
+      for (let pr = 5; pr < size - 2; pr += 7)
+        for (let pc = 5; pc < size - 2; pc += 7)
+          ctx.fillRect(bx + pc, by + pr, 2, 2);
+      ctx.globalAlpha = 1;
+    },
+  },
+};
+
+// ---- DOM refs ----
 
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
@@ -39,15 +120,14 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
-
 const themeSwitch = document.getElementById('theme-switch');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
 
-// ---- Tema (claro / oscuro) ----
-// El color de la rejilla se dibuja en el canvas, así que lo leemos del
-// tema CSS activo y lo cacheamos para no recalcularlo en cada frame.
+let currentSkin = SKINS.retro;
 let gridColor = '#22222e';
+
+// ---- Tema ----
 
 function readGridColor() {
   const value = getComputedStyle(document.documentElement)
@@ -58,10 +138,9 @@ function readGridColor() {
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   themeSwitch.checked = theme === 'light';
-  readGridColor();
+  if (!currentSkin.gridColor) readGridColor();
 }
 
-// Por defecto modo oscuro; respeta la preferencia guardada si existe.
 const savedTheme = localStorage.getItem('tetris-theme') === 'light' ? 'light' : 'dark';
 applyTheme(savedTheme);
 
@@ -70,6 +149,30 @@ themeSwitch.addEventListener('change', () => {
   applyTheme(theme);
   localStorage.setItem('tetris-theme', theme);
 });
+
+// ---- Skin ----
+
+function applySkin(id) {
+  currentSkin = SKINS[id] || SKINS.retro;
+  localStorage.setItem('tetris-skin', id);
+  if (currentSkin.gridColor) {
+    gridColor = currentSkin.gridColor;
+  } else {
+    readGridColor();
+  }
+  document.querySelectorAll('.skin-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.skin === id)
+  );
+}
+
+document.querySelectorAll('.skin-btn').forEach(btn =>
+  btn.addEventListener('click', () => applySkin(btn.dataset.skin))
+);
+
+const savedSkin = localStorage.getItem('tetris-skin') || 'retro';
+applySkin(savedSkin);
+
+// ---- Game logic ----
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -186,16 +289,17 @@ function updateHUD() {
   levelEl.textContent = level;
 }
 
+// ---- Drawing ----
+
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
-  context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  context.globalAlpha = 1;
+  currentSkin.draw(context, x, y, colorIndex, size, alpha);
+}
+
+function fillBg(context, w, h) {
+  if (!currentSkin.boardBg) return;
+  context.fillStyle = currentSkin.boardBg;
+  context.fillRect(0, 0, w, h);
 }
 
 function drawGrid() {
@@ -217,21 +321,19 @@ function drawGrid() {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  fillBg(ctx, canvas.width, canvas.height);
   drawGrid();
 
-  // board
   for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++)
       drawBlock(ctx, c, r, board[r][c], BLOCK);
 
-  // ghost
   const gy = ghostY();
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
       if (current.shape[r][c])
         drawBlock(ctx, current.x + c, gy + r, current.shape[r][c], BLOCK, 0.2);
 
-  // current piece
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
       drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
@@ -240,6 +342,7 @@ function draw() {
 function drawNext() {
   const NB = 30;
   nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  fillBg(nextCtx, nextCanvas.width, nextCanvas.height);
   const shape = next.shape;
   const offX = Math.floor((4 - shape[0].length) / 2);
   const offY = Math.floor((4 - shape.length) / 2);
@@ -247,6 +350,8 @@ function drawNext() {
     for (let c = 0; c < shape[r].length; c++)
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
 }
+
+// ---- Overlay / flow ----
 
 function endGame() {
   gameOver = true;
