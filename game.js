@@ -41,8 +41,15 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
 const themeSwitch = document.getElementById('theme-switch');
+const nameInputSection = document.getElementById('name-input-section');
+const playerNameInput = document.getElementById('player-name');
+const saveScoreBtn = document.getElementById('save-score-btn');
+const resetRecordsBtn = document.getElementById('reset-records-btn');
+const recordsOverlayEl = document.getElementById('records-overlay');
+const recordsMainEl = document.getElementById('records-main');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let combo, maxCombo, maxLinesSingle;
 
 // ---- Tema (claro / oscuro) ----
 // El color de la rejilla se dibuja en el canvas, así que lo leemos del
@@ -59,6 +66,55 @@ function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   themeSwitch.checked = theme === 'light';
   readGridColor();
+}
+
+// ---- Records ----
+const RECORDS_KEY = 'tetris-records';
+const MAX_RECORDS = 5;
+
+function loadRecords() {
+  try { return JSON.parse(localStorage.getItem(RECORDS_KEY)) || []; }
+  catch { return []; }
+}
+
+function qualifiesForTop(s) {
+  const r = loadRecords();
+  return r.length < MAX_RECORDS || s > r[r.length - 1].score;
+}
+
+function saveRecord(name, s, mc, ml) {
+  const r = loadRecords();
+  const entry = { name: name.trim() || 'AAA', score: s, maxCombo: mc, maxLines: ml };
+  r.push(entry);
+  r.sort((a, b) => b.score - a.score);
+  r.splice(MAX_RECORDS);
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(r));
+  return r.findIndex(e => e.name === entry.name && e.score === entry.score && e.maxCombo === entry.maxCombo);
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderRecords(highlightIdx = -1) {
+  const r = loadRecords();
+  const makeTable = (compact) => {
+    if (!r.length) return '<p class="no-records">Sin récords aún</p>';
+    return `<table class="records-table">
+      <thead><tr><th>#</th><th>Nombre</th><th>Score</th><th>Combo</th><th>Líneas</th></tr></thead>
+      <tbody>${r.map((e, i) => `
+        <tr class="${i === highlightIdx ? 'record-new' : ''}">
+          <td>${i + 1}</td>
+          <td>${escapeHtml(e.name)}</td>
+          <td>${e.score.toLocaleString()}</td>
+          <td>${e.maxCombo}x</td>
+          <td>${e.maxLines}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  };
+  recordsOverlayEl.innerHTML = makeTable(true);
+  recordsMainEl.innerHTML = makeTable(false);
 }
 
 // Por defecto modo oscuro; respeta la preferencia guardada si existe.
@@ -133,12 +189,14 @@ function clearLines() {
     }
   }
   if (cleared) {
+    if (cleared > maxLinesSingle) maxLinesSingle = cleared;
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
   }
+  return cleared;
 }
 
 function ghostY() {
@@ -166,7 +224,13 @@ function softDrop() {
 
 function lockPiece() {
   merge();
-  clearLines();
+  const cleared = clearLines();
+  if (cleared > 0) {
+    combo++;
+    if (combo > maxCombo) maxCombo = combo;
+  } else {
+    combo = 0;
+  }
   spawn();
 }
 
@@ -252,7 +316,14 @@ function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  overlayScore.textContent = `Score: ${score.toLocaleString()} · Combo: ${maxCombo}x · Líneas: ${maxLinesSingle}`;
+  renderRecords();
+  nameInputSection.classList.add('hidden');
+  if (qualifiesForTop(score)) {
+    nameInputSection.classList.remove('hidden');
+    playerNameInput.value = '';
+    setTimeout(() => playerNameInput.focus(), 50);
+  }
   overlay.classList.remove('hidden');
 }
 
@@ -292,6 +363,9 @@ function init() {
   score = 0;
   lines = 0;
   level = 1;
+  combo = 0;
+  maxCombo = 0;
+  maxLinesSingle = 0;
   paused = false;
   gameOver = false;
   dropInterval = 1000;
@@ -332,4 +406,20 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+saveScoreBtn.addEventListener('click', () => {
+  const idx = saveRecord(playerNameInput.value, score, maxCombo, maxLinesSingle);
+  nameInputSection.classList.add('hidden');
+  renderRecords(idx);
+});
+
+playerNameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveScoreBtn.click();
+});
+
+resetRecordsBtn.addEventListener('click', () => {
+  localStorage.removeItem(RECORDS_KEY);
+  renderRecords();
+});
+
+renderRecords();
 init();

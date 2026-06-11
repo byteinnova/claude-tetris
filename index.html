@@ -55,10 +55,26 @@
         <div class="overlay-box">
           <p id="overlay-title">GAME OVER</p>
           <p id="overlay-score"></p>
+          <div id="name-input-section" class="hidden">
+            <p class="name-prompt">¡Nuevo récord! Ingresa tu nombre:</p>
+            <div class="name-row">
+              <input type="text" id="player-name" maxlength="16" placeholder="Tu nombre" autocomplete="off" />
+              <button id="save-score-btn">OK</button>
+            </div>
+          </div>
+          <div id="records-overlay"></div>
           <button id="restart-btn">Reiniciar</button>
         </div>
       </div>
     </div>
+
+    <section class="records-section">
+      <div class="records-header">
+        <span class="label">TOP 5 RÉCORDS</span>
+        <button id="reset-records-btn">Resetear</button>
+      </div>
+      <div id="records-main"></div>
+    </section>
   </div>
 
   <script src="game.js"></script>
