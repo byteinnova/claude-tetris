@@ -259,3 +259,126 @@ kbd {
 #restart-btn:hover {
   background: var(--accent-hover);
 }
+
+/* ---- High scores ---- */
+.hs-name-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.hs-name-section.hidden {
+  display: none;
+}
+
+.hs-name-label {
+  font-size: 12px;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.hs-name-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+#hs-name-input {
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 6px 10px;
+  width: 120px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#hs-name-input:focus {
+  border-color: var(--accent);
+}
+
+#hs-save-btn {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#hs-save-btn:hover {
+  background: var(--accent-hover);
+}
+
+.hs-section {
+  width: 100%;
+}
+
+.hs-section.hidden {
+  display: none;
+}
+
+.hs-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.clear-hs-btn {
+  background: transparent;
+  color: var(--label);
+  border: 1px solid var(--kbd-border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.clear-hs-btn:hover {
+  color: var(--overlay-title);
+  border-color: var(--overlay-title);
+}
+
+.hs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.hs-table th {
+  text-align: left;
+  color: var(--label);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 3px 4px;
+  border-bottom: 1px solid var(--kbd-border);
+}
+
+.hs-table td {
+  padding: 4px 4px;
+  border-bottom: 1px solid var(--grid);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+}
+
+.hs-table tr.hs-new td {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.hs-empty {
+  text-align: center;
+  color: var(--label);
+  padding: 8px !important;
+  font-family: inherit !important;
+}
