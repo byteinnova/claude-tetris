@@ -41,8 +41,15 @@ const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 
 const themeSwitch = document.getElementById('theme-switch');
+const pauseOverlay = document.getElementById('pause-overlay');
+const pauseResumeBtn = document.getElementById('pause-resume-btn');
+const pauseRestartBtn = document.getElementById('pause-restart-btn');
+const pauseControlsBtn = document.getElementById('pause-controls-btn');
+const pauseControlsList = document.getElementById('pause-controls-list');
+const pauseLevelBtns = document.getElementById('pause-level-btns');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let startLevel = 1;
 
 // ---- Tema (claro / oscuro) ----
 // El color de la rejilla se dibuja en el canvas, así que lo leemos del
@@ -135,7 +142,7 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
+    level = Math.floor(lines / 10) + startLevel;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
     updateHUD();
   }
@@ -256,17 +263,26 @@ function endGame() {
   overlay.classList.remove('hidden');
 }
 
+function openPauseMenu() {
+  if (gameOver) return;
+  paused = true;
+  cancelAnimationFrame(animId);
+  pauseOverlay.classList.remove('hidden');
+}
+
+function closePauseMenu() {
+  paused = false;
+  pauseOverlay.classList.add('hidden');
+  lastTime = performance.now();
+  loop(lastTime);
+}
+
 function togglePause() {
   if (gameOver) return;
-  paused = !paused;
-  if (!paused) {
-    lastTime = performance.now();
-    loop(lastTime);
+  if (paused) {
+    closePauseMenu();
   } else {
-    cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    openPauseMenu();
   }
 }
 
@@ -291,22 +307,23 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = startLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (startLevel - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  pauseOverlay.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -331,5 +348,28 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', init);
+
+pauseResumeBtn.addEventListener('click', closePauseMenu);
+
+pauseRestartBtn.addEventListener('click', init);
+
+pauseControlsBtn.addEventListener('click', () => {
+  pauseControlsList.classList.toggle('hidden');
+});
+
+(function buildLevelBtns() {
+  for (let i = 1; i <= 9; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    btn.dataset.level = i;
+    if (i === startLevel) btn.classList.add('selected');
+    btn.addEventListener('click', () => {
+      startLevel = i;
+      pauseLevelBtns.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+    pauseLevelBtns.appendChild(btn);
+  }
+}());
 
 init();

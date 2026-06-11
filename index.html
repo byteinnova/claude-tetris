@@ -58,6 +58,26 @@
           <button id="restart-btn">Reiniciar</button>
         </div>
       </div>
+
+      <div id="pause-overlay" class="overlay hidden">
+        <div class="overlay-box pause-box">
+          <p class="pause-title">PAUSA</p>
+          <button id="pause-resume-btn" class="pause-btn">Reanudar</button>
+          <button id="pause-restart-btn" class="pause-btn">Reiniciar</button>
+          <button id="pause-controls-btn" class="pause-btn">Ver controles</button>
+          <ul id="pause-controls-list" class="pause-controls-list hidden">
+            <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+            <li><kbd>↑</kbd> rotar</li>
+            <li><kbd>↓</kbd> bajar</li>
+            <li><kbd>Space</kbd> caída</li>
+            <li><kbd>P</kbd> / <kbd>Esc</kbd> pausa</li>
+          </ul>
+          <div class="pause-level-section">
+            <span class="pause-label">Nivel inicial</span>
+            <div class="pause-level-btns" id="pause-level-btns"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
